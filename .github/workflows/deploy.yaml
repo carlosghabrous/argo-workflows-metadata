@@ -1,0 +1,60 @@
+name: Deploy Argo Workflow (Multi-Env)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout metadata repo
+        uses: actions/checkout@v4
+
+      - name: Detect workflow name, environment, image tag, and namespace
+        id: detect
+        run: |
+          FILE=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | head -n 1)
+          WORKFLOW_NAME=$(basename "$FILE" .yaml)
+          ENVIRONMENT=$(echo "$FILE" | cut -d '/' -f 1)
+          IMAGE_TAG=$(grep '^image_tag:' "$FILE" | awk '{ print $2 }')
+          NAMESPACE=$(grep '^namespace:' "$FILE" | awk '{ print $2 }')
+
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+          echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "namespace=$NAMESPACE" >> $GITHUB_OUTPUT
+
+    #   - name: Set cluster context based on environment
+    #     run: |
+    #       case "${{ steps.detect.outputs.environment }}" in
+    #         staging)
+    #           # Example for GKE
+    #           gcloud container clusters get-credentials staging-cluster \
+    #             --zone us-central1-a --project my-staging-project
+    #           ;;
+    #         production)
+    #           gcloud container clusters get-credentials production-cluster \
+    #             --zone us-central1-b --project my-prod-project
+    #           ;;
+    #         *)
+    #           echo "Unknown environment: ${{ steps.detect.outputs.environment }}"
+    #           exit 1
+    #           ;;
+    #       esac
+
+    #   - name: Patch Argo WorkflowTemplate with new image_tag
+    #     run: |
+    #       kubectl patch workflowtemplate "${{ steps.detect.outputs.workflow_name }}" \
+    #         --namespace "${{ steps.detect.outputs.namespace }}" \
+    #         --type='json' \
+    #         -p="[
+    #           {
+    #             \"op\": \"replace\",
+    #             \"path\": \"/spec/arguments/parameters/0/value\",
+    #             \"value\": \"${{ steps.detect.outputs.image_tag }}\"
+    #           }
+    #         ]"
