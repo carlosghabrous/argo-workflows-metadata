@@ -17,11 +17,20 @@ jobs:
         id: detect
         run: |
           FILE=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | head -n 1)
-          WORKFLOW_NAME=$(basename "$FILE" .yaml)
-          ENVIRONMENT=$(echo "$FILE" | cut -d '/' -f 1)
-          IMAGE_TAG=$(grep '^image_tag:' "$FILE" | awk '{ print $2 }')
-          NAMESPACE=$(grep '^namespace:' "$FILE" | awk '{ print $2 }')
+          echo "Detected file: $FILE"
 
+          WORKFLOW_NAME=$(basename "$FILE" .yaml)
+          echo "detected workflow name: $WORKFLOW_NAME"
+
+          ENVIRONMENT=$(echo "$FILE" | cut -d '/' -f 1)
+          echo "detected environment: $ENVIRONMENT"
+
+          IMAGE_TAG=$(grep '^image_tag:' "$FILE" | awk '{ print $2 }')
+          echo "detected image tag: $IMAGE_TAG"
+
+          NAMESPACE=$(grep '^namespace:' "$FILE" | awk '{ print $2 }')
+          echo "detected namespace: $NAMESPACE" 
+          
           echo "file=$FILE" >> $GITHUB_OUTPUT
           echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
