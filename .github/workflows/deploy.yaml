@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout metadata repo
         uses: actions/checkout@v4
+        with: 
+            fetch-depth: 0 # Fetch all history for accurate diff
 
       - name: Detect workflow name, environment, image tag, and namespace
         id: detect
@@ -30,7 +32,7 @@ jobs:
 
           NAMESPACE=$(grep '^namespace:' "$FILE" | awk '{ print $2 }')
           echo "detected namespace: $NAMESPACE" 
-          
+
           echo "file=$FILE" >> $GITHUB_OUTPUT
           echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
