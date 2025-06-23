@@ -39,33 +39,20 @@ jobs:
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "namespace=$NAMESPACE" >> $GITHUB_OUTPUT
 
-    #   - name: Set cluster context based on environment
-    #     run: |
-    #       case "${{ steps.detect.outputs.environment }}" in
-    #         staging)
-    #           # Example for GKE
-    #           gcloud container clusters get-credentials staging-cluster \
-    #             --zone us-central1-a --project my-staging-project
-    #           ;;
-    #         production)
-    #           gcloud container clusters get-credentials production-cluster \
-    #             --zone us-central1-b --project my-prod-project
-    #           ;;
-    #         *)
-    #           echo "Unknown environment: ${{ steps.detect.outputs.environment }}"
-    #           exit 1
-    #           ;;
-    #       esac
+      - name: Select cluster based on environment
+        run: |
+            if [ "${{ steps.detect.outputs.environment }}" == "prod" ]; then
+                echo "Setting context to prod cluster"
+                echo "KUBECONFIG=/path/to/prod/kubeconfig" >> $GITHUB_ENV
+            else
+                echo "Setting context to dev cluster"
+                echo "KUBECONFIG=/path/to/dev/kubeconfig" >> $GITHUB_ENV
+            fi
 
-    #   - name: Patch Argo WorkflowTemplate with new image_tag
-    #     run: |
-    #       kubectl patch workflowtemplate "${{ steps.detect.outputs.workflow_name }}" \
-    #         --namespace "${{ steps.detect.outputs.namespace }}" \
-    #         --type='json' \
-    #         -p="[
-    #           {
-    #             \"op\": \"replace\",
-    #             \"path\": \"/spec/arguments/parameters/0/value\",
-    #             \"value\": \"${{ steps.detect.outputs.image_tag }}\"
-    #           }
-    #         ]"
+      - name: Deploy Argo Workflow
+        run: |
+            kubectl get workflowtemplate ash-catmodel -n volcanoes -o json \
+            | jq --arg param image_tag --arg value 11.22.33 '
+            .spec.arguments.parameters |= map(
+            if .name == $param then .value = $value else . end
+            )' | kubectl replace -f -
